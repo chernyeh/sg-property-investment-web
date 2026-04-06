@@ -77,8 +77,6 @@ export default function PriceTrends() {
     )
   }
 
-  const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6']
-
   return (
     <div className="space-y-6">
       <div className="card">
@@ -114,7 +112,7 @@ export default function PriceTrends() {
 
       {selectedProperties.length > 0 && (
         <>
-          {selectedProperties.map((propId, idx) => {
+          {selectedProperties.map((propId) => {
             const prop = properties.find(p => p.id === propId)
             const txns = transactions.get(propId) || []
 

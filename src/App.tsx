@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { BarChart3, Home, TrendingUp, Calculator, Briefcase, DollarSign } from 'lucide-react'
+import { BarChart3, Home, TrendingUp, Calculator, Briefcase, DollarSign, LineChart } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import ProjectComparison from './components/ProjectComparison'
 import InvestmentScreening from './components/InvestmentScreening'
 import MortgageCalculator from './components/MortgageCalculator'
 import Portfolio from './components/Portfolio'
 import RentalYield from './components/RentalYield'
+import PriceTrends from './components/PriceTrends'
 
-type Tab = 'dashboard' | 'comparison' | 'screening' | 'mortgage' | 'portfolio' | 'rental'
+type Tab = 'dashboard' | 'comparison' | 'screening' | 'mortgage' | 'portfolio' | 'rental' | 'trends'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
@@ -87,6 +88,17 @@ export default function App() {
               Rental Yield
             </button>
             <button
+              onClick={() => setActiveTab('trends')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                activeTab === 'trends'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+              }`}
+            >
+              <LineChart className="w-4 h-4" />
+              Price Trends
+            </button>
+            <button
               onClick={() => setActiveTab('portfolio')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                 activeTab === 'portfolio'
@@ -108,6 +120,7 @@ export default function App() {
         {activeTab === 'screening' && <InvestmentScreening />}
         {activeTab === 'mortgage' && <MortgageCalculator />}
         {activeTab === 'rental' && <RentalYield />}
+        {activeTab === 'trends' && <PriceTrends />}
         {activeTab === 'portfolio' && <Portfolio />}
       </main>
 

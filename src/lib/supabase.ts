@@ -21,6 +21,7 @@ export interface Property {
   size_sqft: number
   recent_price: number
   recent_date: string
+  top_date?: string
 }
 
 export interface Transaction {
@@ -53,7 +54,7 @@ export async function getProperties() {
     .from('properties')
     .select('*')
     .order('recent_price', { ascending: false })
-  
+
   if (error) throw error
   return data as Property[]
 }
@@ -64,7 +65,7 @@ export async function getPropertyById(id: string) {
     .select('*')
     .eq('id', id)
     .single()
-  
+
   if (error) throw error
   return data as Property
 }
@@ -74,7 +75,7 @@ export async function getPropertiesByDistrict(district: number) {
     .from('properties')
     .select('*')
     .eq('district', district)
-  
+
   if (error) throw error
   return data as Property[]
 }
@@ -86,14 +87,14 @@ export async function searchProperties(filters: {
   propertyType?: string
 }) {
   let query = supabase.from('properties').select('*')
-  
+
   if (filters.minPrice) query = query.gte('recent_price', filters.minPrice)
   if (filters.maxPrice) query = query.lte('recent_price', filters.maxPrice)
   if (filters.districts?.length) query = query.in('district', filters.districts)
   if (filters.propertyType) query = query.eq('property_type', filters.propertyType)
-  
+
   const { data, error } = await query
-  
+
   if (error) throw error
   return data as Property[]
 }
@@ -103,7 +104,7 @@ export async function getRentals() {
     .from('rentals')
     .select('*')
     .order('annual_rent', { ascending: false })
-  
+
   if (error) throw error
   return data as Rental[]
 }
@@ -112,13 +113,13 @@ export async function getPropertiesWithYield() {
   const { data: properties, error: propsError } = await supabase
     .from('properties')
     .select('*')
-  
+
   if (propsError) throw propsError
 
   const { data: rentals, error: rentalsError } = await supabase
     .from('rentals')
     .select('*')
-  
+
   if (rentalsError) throw rentalsError
 
   // Combine properties with rental data
@@ -126,7 +127,7 @@ export async function getPropertiesWithYield() {
     const rental = (rentals || []).find(r => r.property_id === prop.id)
     const annualYield = rental ? (rental.annual_rent / prop.recent_price) * 100 : 0
     const monthlyYield = rental ? (rental.monthly_rent / prop.recent_price) * 100 : 0
-    
+
     return {
       ...prop,
       rental,

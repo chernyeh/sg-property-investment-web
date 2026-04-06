@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react'
-import { getPropertiesWithYield, PropertyWithYield } from '../lib/supabase'
-import { TrendingUp } from 'lucide-react'
+import { getPropertiesWithYield, Property } from '../lib/supabase'
+import { DollarSign, Filter } from 'lucide-react'
+
+interface PropertyWithYield extends Property {
+  rental?: any
+  annualYield?: number
+  monthlyYield?: number
+}
 
 export default function RentalYield() {
   const [properties, setProperties] = useState<PropertyWithYield[]>([])
+  const [filteredProperties, setFilteredProperties] = useState<PropertyWithYield[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Filters
-  const [minBedrooms, setMinBedrooms] = useState(0)
-  const [minSqft, setMinSqft] = useState(0)
-  const [selectedBedroom, setSelectedBedroom] = useState<number | null>(null)
+  const [tenureFilter, setTenureFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'yield' | 'price' | 'top'>('yield')
 
   useEffect(() => {
     loadProperties()
   }, [])
+
+  useEffect(() => {
+    filterAndSort()
+  }, [properties, tenureFilter, sortBy])
 
   async function loadProperties() {
     try {
@@ -22,179 +29,160 @@ export default function RentalYield() {
       const data = await getPropertiesWithYield()
       setProperties(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load properties')
+      console.error('Error loading properties:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Filter and sort by yield
-  const filtered = properties
-    .filter(p => p.rental && p.annualYield! > 0)
-    .filter(p => p.rental!.bedrooms >= minBedrooms)
-    .filter(p => p.size_sqft >= minSqft)
-    .filter(p => selectedBedroom === null || p.rental!.bedrooms === selectedBedroom)
-    .sort((a, b) => (b.annualYield || 0) - (a.annualYield || 0))
+  function filterAndSort() {
+    let filtered = [...properties]
 
-  const avgYield = filtered.length > 0
-    ? filtered.reduce((sum, p) => sum + (p.annualYield || 0), 0) / filtered.length
-    : 0
+    // Filter by tenure
+    if (tenureFilter !== 'all') {
+      filtered = filtered.filter(p => p.tenure === tenureFilter)
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      if (sortBy === 'yield') {
+        return (b.annualYield || 0) - (a.annualYield || 0)
+      } else if (sortBy === 'price') {
+        return a.recent_price - b.recent_price
+      } else if (sortBy === 'top') {
+        const dateA = new Date(a.top_date || '').getTime() || 0
+        const dateB = new Date(b.top_date || '').getTime() || 0
+        return dateB - dateA
+      }
+      return 0
+    })
+
+    setFilteredProperties(filtered)
+  }
 
   if (loading) {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="text-gray-600 mt-4">Loading rental data...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-        <p className="font-semibold">Error loading data</p>
-        <p className="text-sm">{error}</p>
-        <button
-          onClick={loadProperties}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-        >
-          Try Again
-        </button>
+        <p className="text-gray-600 mt-4">Loading rental yield data...</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
+      {/* Header */}
       <div className="card">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-green-600" />
+          <DollarSign className="w-5 h-5 text-green-600" />
           <h2 className="text-xl font-bold text-gray-900">Rental Yield Analysis</h2>
         </div>
 
+        {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Min Bedrooms: {minBedrooms}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="5"
-              step="1"
-              value={minBedrooms}
-              onChange={(e) => setMinBedrooms(Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Min Sqft: {minSqft.toLocaleString()}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="3000"
-              step="100"
-              value={minSqft}
-              onChange={(e) => setMinSqft(Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Filter by Bedrooms
+              <Filter className="w-4 h-4 inline mr-1" />
+              Tenure
             </label>
             <select
-              value={selectedBedroom === null ? '' : selectedBedroom}
-              onChange={(e) => setSelectedBedroom(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={tenureFilter}
+              onChange={(e) => setTenureFilter(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Bedrooms</option>
-              <option value="1">1 Bedroom</option>
-              <option value="2">2 Bedrooms</option>
-              <option value="3">3 Bedrooms</option>
-              <option value="4">4 Bedrooms</option>
-              <option value="5">5+ Bedrooms</option>
+              <option value="all">All Tenures</option>
+              <option value="Freehold">Freehold</option>
+              <option value="99-Year">99-Year</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="yield">Highest Yield</option>
+              <option value="price">Lowest Price</option>
+              <option value="top">Newest TOP</option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            <div className="w-full px-4 py-2 bg-gray-100 rounded-lg text-gray-800 font-semibold text-center">
+              {filteredProperties.length} Properties
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card bg-green-50 border-l-4 border-green-600">
-          <p className="text-gray-600 text-sm font-medium">Matching Properties</p>
-          <p className="text-3xl font-bold text-green-600">{filtered.length}</p>
-        </div>
-        <div className="card bg-emerald-50 border-l-4 border-emerald-600">
-          <p className="text-gray-600 text-sm font-medium">Average Yield</p>
-          <p className="text-3xl font-bold text-emerald-600">{avgYield.toFixed(2)}%</p>
-        </div>
-        <div className="card bg-teal-50 border-l-4 border-teal-600">
-          <p className="text-gray-600 text-sm font-medium">Highest Yield</p>
-          <p className="text-3xl font-bold text-teal-600">
-            {filtered.length > 0 ? (filtered[0].annualYield || 0).toFixed(2) : 0}%
-          </p>
-        </div>
+      {/* Properties Table */}
+      <div className="card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50">
+              <th className="text-left py-3 px-4 font-semibold text-gray-700">Property</th>
+              <th className="text-center py-3 px-4 font-semibold text-gray-700">Tenure</th>
+              <th className="text-center py-3 px-4 font-semibold text-gray-700">TOP Date</th>
+              <th className="text-right py-3 px-4 font-semibold text-gray-700">Price</th>
+              <th className="text-right py-3 px-4 font-semibold text-gray-700">Annual Rent</th>
+              <th className="text-right py-3 px-4 font-semibold text-green-700">Annual Yield</th>
+              <th className="text-right py-3 px-4 font-semibold text-green-700">Monthly Yield</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredProperties.map((prop, idx) => (
+              <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-3 px-4 text-gray-900 font-medium">
+                  <div>
+                    <p className="font-semibold">{prop.project_name}</p>
+                    <p className="text-xs text-gray-500">{prop.location} (D{prop.district})</p>
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-center">
+                  <span className={`inline-block px-3 py-1 rounded font-semibold text-xs ${
+                    prop.tenure === 'Freehold'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {prop.tenure}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-center text-gray-700">
+                  {prop.top_date ? new Date(prop.top_date).toLocaleDateString('en-SG') : 'N/A'}
+                </td>
+                <td className="py-3 px-4 text-right font-semibold text-gray-900">
+                  ${(prop.recent_price / 1000000).toFixed(2)}M
+                </td>
+                <td className="py-3 px-4 text-right text-gray-700">
+                  ${(prop.rental?.annual_rent / 1000).toFixed(0)}K
+                </td>
+                <td className="py-3 px-4 text-right">
+                  <span className={`inline-block px-3 py-1 rounded font-bold ${
+                    (prop.annualYield || 0) > 4
+                      ? 'bg-green-100 text-green-800'
+                      : (prop.annualYield || 0) > 3
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {(prop.annualYield || 0).toFixed(2)}%
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-right text-gray-700 font-semibold">
+                  {(prop.monthlyYield || 0).toFixed(2)}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Results Table */}
-      <div className="card">
-        <h2 className="text-xl font-bold mb-4 text-gray-900">Properties by Yield ({filtered.length})</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Project</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-700">BR</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Sqft</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Purchase Price</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Monthly Rent</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Annual Rent</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Yield</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((property) => (
-                <tr key={property.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-3 px-4 text-gray-900 font-medium">{property.project_name}</td>
-                  <td className="py-3 px-4 text-center text-gray-700 font-semibold">
-                    {property.rental?.bedrooms || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-700">
-                    {property.size_sqft.toLocaleString()}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-900 font-semibold">
-                    ${(property.recent_price / 1000000).toFixed(2)}M
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-700">
-                    ${property.rental?.monthly_rent.toLocaleString() || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-700">
-                    ${property.rental?.annual_rent.toLocaleString() || '-'}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                      property.annualYield! > 4 ? 'bg-green-100 text-green-800' :
-                      property.annualYield! > 2.5 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {property.annualYield?.toFixed(2)}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {filteredProperties.length === 0 && (
+        <div className="card text-center py-12 bg-gray-50">
+          <p className="text-gray-600">No properties match your filters</p>
         </div>
-        {filtered.length === 0 && (
-          <p className="text-center text-gray-600 py-8">No properties match your criteria</p>
-        )}
-      </div>
+      )}
     </div>
   )
 }

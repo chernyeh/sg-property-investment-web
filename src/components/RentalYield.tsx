@@ -12,8 +12,16 @@ export default function RentalYield() {
   const [properties, setProperties] = useState<PropertyWithYield[]>([])
   const [filteredProperties, setFilteredProperties] = useState<PropertyWithYield[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Filters
   const [tenureFilter, setTenureFilter] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<'yield' | 'price' | 'top'>('yield')
+  const [districtFilter, setDistrictFilter] = useState<string>('all')
+  const [bedroomFilter, setBedroomFilter] = useState<string>('all')
+  const [minSqft, setMinSqft] = useState<string>('')
+  const [maxSqft, setMaxSqft] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'yield' | 'price' | 'top' | 'sqft'>('yield')
+
+  const districts = [1, 2, 3, 4, 5, 9, 10, 11, 12, 14, 15, 16, 17, 19, 20, 25, 26, 27]
 
   useEffect(() => {
     loadProperties()
@@ -21,7 +29,7 @@ export default function RentalYield() {
 
   useEffect(() => {
     filterAndSort()
-  }, [properties, tenureFilter, sortBy])
+  }, [properties, tenureFilter, districtFilter, bedroomFilter, minSqft, maxSqft, sortBy])
 
   async function loadProperties() {
     try {
@@ -43,6 +51,24 @@ export default function RentalYield() {
       filtered = filtered.filter(p => p.tenure === tenureFilter)
     }
 
+    // Filter by district
+    if (districtFilter !== 'all') {
+      filtered = filtered.filter(p => p.district === parseInt(districtFilter))
+    }
+
+    // Filter by bedrooms
+    if (bedroomFilter !== 'all') {
+      filtered = filtered.filter(p => p.rental?.bedrooms === parseInt(bedroomFilter))
+    }
+
+    // Filter by sqft
+    if (minSqft) {
+      filtered = filtered.filter(p => p.size_sqft >= parseInt(minSqft))
+    }
+    if (maxSqft) {
+      filtered = filtered.filter(p => p.size_sqft <= parseInt(maxSqft))
+    }
+
     // Sort
     filtered.sort((a, b) => {
       if (sortBy === 'yield') {
@@ -53,6 +79,8 @@ export default function RentalYield() {
         const dateA = new Date(a.top_date || '').getTime() || 0
         const dateB = new Date(b.top_date || '').getTime() || 0
         return dateB - dateA
+      } else if (sortBy === 'sqft') {
+        return b.size_sqft - a.size_sqft
       }
       return 0
     })
@@ -79,12 +107,9 @@ export default function RentalYield() {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <Filter className="w-4 h-4 inline mr-1" />
-              Tenure
-            </label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Tenure</label>
             <select
               value={tenureFilter}
               onChange={(e) => setTenureFilter(e.target.value)}
@@ -93,6 +118,35 @@ export default function RentalYield() {
               <option value="all">All Tenures</option>
               <option value="Freehold">Freehold</option>
               <option value="99-Year">99-Year</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">District</label>
+            <select
+              value={districtFilter}
+              onChange={(e) => setDistrictFilter(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Districts</option>
+              {districts.map(d => (
+                <option key={d} value={d}>District {d}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Bedrooms</label>
+            <select
+              value={bedroomFilter}
+              onChange={(e) => setBedroomFilter(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Bedrooms</option>
+              <option value="2">2 Bedrooms</option>
+              <option value="3">3 Bedrooms</option>
+              <option value="4">4 Bedrooms</option>
+              <option value="5">5+ Bedrooms</option>
             </select>
           </div>
 
@@ -106,7 +160,33 @@ export default function RentalYield() {
               <option value="yield">Highest Yield</option>
               <option value="price">Lowest Price</option>
               <option value="top">Newest TOP</option>
+              <option value="sqft">Largest Size</option>
             </select>
+          </div>
+        </div>
+
+        {/* Size Filter */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Min Size (sqft)</label>
+            <input
+              type="number"
+              value={minSqft}
+              onChange={(e) => setMinSqft(e.target.value)}
+              placeholder="e.g., 1000"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Max Size (sqft)</label>
+            <input
+              type="number"
+              value={maxSqft}
+              onChange={(e) => setMaxSqft(e.target.value)}
+              placeholder="e.g., 2000"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           <div className="flex items-end">
@@ -125,10 +205,11 @@ export default function RentalYield() {
               <th className="text-left py-3 px-4 font-semibold text-gray-700">Property</th>
               <th className="text-center py-3 px-4 font-semibold text-gray-700">Tenure</th>
               <th className="text-center py-3 px-4 font-semibold text-gray-700">TOP Date</th>
+              <th className="text-center py-3 px-4 font-semibold text-gray-700">Bedrooms</th>
+              <th className="text-right py-3 px-4 font-semibold text-gray-700">Size (sqft)</th>
               <th className="text-right py-3 px-4 font-semibold text-gray-700">Price</th>
-              <th className="text-right py-3 px-4 font-semibold text-gray-700">Annual Rent</th>
+              <th className="text-right py-3 px-4 font-semibold text-gray-700">Monthly Rent</th>
               <th className="text-right py-3 px-4 font-semibold text-green-700">Annual Yield</th>
-              <th className="text-right py-3 px-4 font-semibold text-green-700">Monthly Yield</th>
             </tr>
           </thead>
           <tbody>
@@ -152,11 +233,17 @@ export default function RentalYield() {
                 <td className="py-3 px-4 text-center text-gray-700">
                   {prop.top_date ? new Date(prop.top_date).toLocaleDateString('en-SG') : 'N/A'}
                 </td>
+                <td className="py-3 px-4 text-center text-gray-700 font-semibold">
+                  {prop.rental?.bedrooms || 'N/A'}
+                </td>
+                <td className="py-3 px-4 text-right text-gray-700">
+                  {prop.size_sqft.toLocaleString()}
+                </td>
                 <td className="py-3 px-4 text-right font-semibold text-gray-900">
                   ${(prop.recent_price / 1000000).toFixed(2)}M
                 </td>
-                <td className="py-3 px-4 text-right text-gray-700">
-                  ${(prop.rental?.annual_rent / 1000).toFixed(0)}K
+                <td className="py-3 px-4 text-right font-semibold text-gray-900">
+                  ${(prop.rental?.monthly_rent || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}
                 </td>
                 <td className="py-3 px-4 text-right">
                   <span className={`inline-block px-3 py-1 rounded font-bold ${
@@ -168,9 +255,6 @@ export default function RentalYield() {
                   }`}>
                     {(prop.annualYield || 0).toFixed(2)}%
                   </span>
-                </td>
-                <td className="py-3 px-4 text-right text-gray-700 font-semibold">
-                  {(prop.monthlyYield || 0).toFixed(2)}%
                 </td>
               </tr>
             ))}

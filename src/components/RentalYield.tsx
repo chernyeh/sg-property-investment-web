@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getPropertiesWithYield, Property } from '../lib/supabase'
-import { DollarSign, Filter } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
 
 interface PropertyWithYield extends Property {
   rental?: any

@@ -15,7 +15,7 @@ export default function RentalYield() {
   
   // Filters
   const [tenureFilter, setTenureFilter] = useState<string>('all')
-  const [districtFilter, setDistrictFilter] = useState<string>('all')
+  const [selectedDistricts, setSelectedDistricts] = useState<number[]>([])
   const [bedroomFilter, setBedroomFilter] = useState<string>('all')
   const [minSqft, setMinSqft] = useState<string>('')
   const [maxSqft, setMaxSqft] = useState<string>('')
@@ -29,7 +29,7 @@ export default function RentalYield() {
 
   useEffect(() => {
     filterAndSort()
-  }, [properties, tenureFilter, districtFilter, bedroomFilter, minSqft, maxSqft, sortBy])
+  }, [properties, tenureFilter, selectedDistricts, bedroomFilter, minSqft, maxSqft, sortBy])
 
   async function loadProperties() {
     try {
@@ -43,6 +43,14 @@ export default function RentalYield() {
     }
   }
 
+  function toggleDistrict(district: number) {
+    setSelectedDistricts(prev =>
+      prev.includes(district)
+        ? prev.filter(d => d !== district)
+        : [...prev, district]
+    )
+  }
+
   function filterAndSort() {
     let filtered = [...properties]
 
@@ -51,9 +59,9 @@ export default function RentalYield() {
       filtered = filtered.filter(p => p.tenure === tenureFilter)
     }
 
-    // Filter by district
-    if (districtFilter !== 'all') {
-      filtered = filtered.filter(p => p.district === parseInt(districtFilter))
+    // Filter by districts (if any selected)
+    if (selectedDistricts.length > 0) {
+      filtered = filtered.filter(p => selectedDistricts.includes(p.district))
     }
 
     // Filter by bedrooms
@@ -106,7 +114,7 @@ export default function RentalYield() {
           <h2 className="text-xl font-bold text-gray-900">Rental Yield Analysis</h2>
         </div>
 
-        {/* Filters */}
+        {/* Tenure & Bedrooms */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Tenure</label>
@@ -122,20 +130,6 @@ export default function RentalYield() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">District</label>
-            <select
-              value={districtFilter}
-              onChange={(e) => setDistrictFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Districts</option>
-              {districts.map(d => (
-                <option key={d} value={d}>District {d}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Bedrooms</label>
             <select
               value={bedroomFilter}
@@ -146,7 +140,6 @@ export default function RentalYield() {
               <option value="2">2 Bedrooms</option>
               <option value="3">3 Bedrooms</option>
               <option value="4">4 Bedrooms</option>
-              <option value="5">5+ Bedrooms</option>
             </select>
           </div>
 
@@ -163,10 +156,16 @@ export default function RentalYield() {
               <option value="sqft">Largest Size</option>
             </select>
           </div>
+
+          <div className="flex items-end">
+            <div className="w-full px-4 py-2 bg-gray-100 rounded-lg text-gray-800 font-semibold text-center">
+              {filteredProperties.length} Properties
+            </div>
+          </div>
         </div>
 
         {/* Size Filter */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Min Size (sqft)</label>
             <input
@@ -188,11 +187,27 @@ export default function RentalYield() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
 
-          <div className="flex items-end">
-            <div className="w-full px-4 py-2 bg-gray-100 rounded-lg text-gray-800 font-semibold text-center">
-              {filteredProperties.length} Properties
-            </div>
+        {/* Districts Multi-Select */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Districts {selectedDistricts.length > 0 && `(${selectedDistricts.length} selected)`}
+          </label>
+          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-2">
+            {districts.map(district => (
+              <button
+                key={district}
+                onClick={() => toggleDistrict(district)}
+                className={`px-3 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                  selectedDistricts.includes(district)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                D{district}
+              </button>
+            ))}
           </div>
         </div>
       </div>

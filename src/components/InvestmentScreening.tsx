@@ -53,11 +53,7 @@ export default function InvestmentScreening() {
   const districts = Array.from({ length: 28 }, (_, i) => i + 1)
   const propertyTypes = ['Condo', 'HDB', 'Landed', 'Commercial']
 
-  const avgPrice = allProperties.length > 0
-    ? allProperties.reduce((sum, p) => sum + p.recent_price, 0) / allProperties.length
-    : 0
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const avgPrice = allProperties.length > 0
+  const avgPsf = allProperties.length > 0
     ? allProperties.reduce((sum, p) => sum + (p.recent_price / p.size_sqft), 0) / allProperties.length
     : 0
 

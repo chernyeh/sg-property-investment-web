@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { getProperties, Property } from '../lib/supabase'
 import { Filter } from 'lucide-react'
+import { sortData, toggleSort, type SortState } from '../lib/sorting'
 
 export default function InvestmentScreening() {
   const [allProperties, setAllProperties] = useState<Property[]>([])
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [sortState, setSortState] = useState<SortState>({ column: null, direction: null })
 
   const [minPrice, setMinPrice] = useState(1000000)
   const [maxPrice, setMaxPrice] = useState(10000000)
@@ -51,7 +53,7 @@ export default function InvestmentScreening() {
   }
 
   const districts = Array.from({ length: 28 }, (_, i) => i + 1)
-  const propertyTypes = ['Condo', 'HDB', 'Landed', 'Commercial']
+  const propertyTypes = ['Condo', 'HDB', 'Landed', 'Commercial', 'Condominium']
 
   const avgPsf = allProperties.length > 0
     ? allProperties.reduce((sum, p) => sum + (p.recent_price / p.size_sqft), 0) / allProperties.length
@@ -193,15 +195,36 @@ export default function InvestmentScreening() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Project</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-700">District</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Price</th>
+                <th 
+                  onClick={() => setSortState(toggleSort(sortState, 'project_name'))}
+                  className="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                >
+                  Project {sortState.column === 'project_name' && (sortState.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  onClick={() => setSortState(toggleSort(sortState, 'district'))}
+                  className="text-center py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                >
+                  District {sortState.column === 'district' && (sortState.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  onClick={() => setSortState(toggleSort(sortState, 'recent_price'))}
+                  className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                >
+                  Price {sortState.column === 'recent_price' && (sortState.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  onClick={() => setSortState(toggleSort(sortState, 'size_sqft'))}
+                  className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
+                >
+                  Sqft {sortState.column === 'size_sqft' && (sortState.direction === 'asc' ? '↑' : '↓')}
+                </th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-700">Price/Sqft</th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-700">vs Avg</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProperties.map((property) => {
+              {sortData(filteredProperties, sortState).map((property) => {
                 const psf = property.recent_price / property.size_sqft
                 const psfDiff = ((psf / avgPsf) - 1) * 100
                 return (
@@ -210,6 +233,9 @@ export default function InvestmentScreening() {
                     <td className="py-3 px-4 text-center text-gray-700">D{property.district}</td>
                     <td className="py-3 px-4 text-right text-gray-900 font-semibold">
                       ${(property.recent_price / 1000000).toFixed(2)}M
+                    </td>
+                    <td className="py-3 px-4 text-right text-gray-700">
+                      {property.size_sqft.toLocaleString()}
                     </td>
                     <td className="py-3 px-4 text-right text-gray-700">
                       ${psf.toFixed(0)}

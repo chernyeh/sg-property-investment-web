@@ -22,6 +22,7 @@ export interface Property {
   recent_price: number
   recent_date: string
   top_date?: string
+  lease_start_date?: string
 }
 
 export interface Transaction {

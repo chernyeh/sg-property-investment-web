@@ -6,6 +6,7 @@ interface PropertyWithYield extends Property {
   rental?: any
   annualYield?: number
   monthlyYield?: number
+  remainingLease?: number
 }
 
 export default function RentalYield() {
@@ -35,7 +36,21 @@ export default function RentalYield() {
     try {
       setLoading(true)
       const data = await getPropertiesWithYield()
-      setProperties(data)
+      
+      // Calculate remaining lease
+      const enrichedData = data.map(prop => {
+        let remainingLease = null
+        if (prop.lease_start_date && (prop.tenure === '99-Year' || prop.tenure === '999-Year')) {
+          const leaseYears = prop.tenure === '99-Year' ? 99 : 999
+          const leaseEndDate = new Date(prop.lease_start_date)
+          leaseEndDate.setFullYear(leaseEndDate.getFullYear() + leaseYears)
+          const today = new Date()
+          remainingLease = Math.ceil((leaseEndDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 365))
+        }
+        return { ...prop, remainingLease }
+      })
+      
+      setProperties(enrichedData)
     } catch (err) {
       console.error('Error loading properties:', err)
     } finally {
@@ -59,14 +74,19 @@ export default function RentalYield() {
       filtered = filtered.filter(p => p.tenure === tenureFilter)
     }
 
-    // Filter by districts (if any selected)
+    // Filter by districts
     if (selectedDistricts.length > 0) {
       filtered = filtered.filter(p => selectedDistricts.includes(p.district))
     }
 
-    // Filter by bedrooms
+    // Filter by bedrooms - more accurate
     if (bedroomFilter !== 'all') {
-      filtered = filtered.filter(p => p.rental?.bedrooms === parseInt(bedroomFilter))
+      const bedCount = parseInt(bedroomFilter)
+      if (bedroomFilter === '4+') {
+        filtered = filtered.filter(p => (p.rental?.bedrooms || 0) >= 4)
+      } else {
+        filtered = filtered.filter(p => (p.rental?.bedrooms || 0) === bedCount)
+      }
     }
 
     // Filter by sqft
@@ -114,7 +134,7 @@ export default function RentalYield() {
           <h2 className="text-xl font-bold text-gray-900">Rental Yield Analysis</h2>
         </div>
 
-        {/* Tenure & Bedrooms */}
+        {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Tenure</label>
@@ -125,7 +145,8 @@ export default function RentalYield() {
             >
               <option value="all">All Tenures</option>
               <option value="Freehold">Freehold</option>
-              <option value="99-Year">99-Year</option>
+              <option value="99-Year">99-Year Leasehold</option>
+              <option value="999-Year">999-Year Leasehold</option>
             </select>
           </div>
 
@@ -139,7 +160,7 @@ export default function RentalYield() {
               <option value="all">All Bedrooms</option>
               <option value="2">2 Bedrooms</option>
               <option value="3">3 Bedrooms</option>
-              <option value="4">4 Bedrooms</option>
+              <option value="4+">4+ Bedrooms</option>
             </select>
           </div>
 
@@ -165,7 +186,7 @@ export default function RentalYield() {
         </div>
 
         {/* Size Filter */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Min Size (sqft)</label>
             <input
@@ -190,7 +211,7 @@ export default function RentalYield() {
         </div>
 
         {/* Districts Multi-Select */}
-        <div>
+        <div className="mt-4">
           <label className="block text-sm font-semibold text-gray-700 mb-3">
             Districts {selectedDistricts.length > 0 && `(${selectedDistricts.length} selected)`}
           </label>
@@ -219,11 +240,15 @@ export default function RentalYield() {
             <tr className="border-b border-gray-200 bg-gray-50">
               <th className="text-left py-3 px-4 font-semibold text-gray-700">Property</th>
               <th className="text-center py-3 px-4 font-semibold text-gray-700">Tenure</th>
+              <th className="text-center py-3 px-4 font-semibold text-gray-700">Remaining Lease</th>
               <th className="text-center py-3 px-4 font-semibold text-gray-700">TOP Date</th>
+              <th className="text-center py-3 px-4 font-semibold text-gray-700">Lease Start</th>
               <th className="text-center py-3 px-4 font-semibold text-gray-700">Bedrooms</th>
               <th className="text-right py-3 px-4 font-semibold text-gray-700">Size (sqft)</th>
               <th className="text-right py-3 px-4 font-semibold text-gray-700">Price</th>
+              <th className="text-center py-3 px-4 font-semibold text-gray-700">Price Trans Date</th>
               <th className="text-right py-3 px-4 font-semibold text-gray-700">Monthly Rent</th>
+              <th className="text-center py-3 px-4 font-semibold text-gray-700">Rent Trans Date</th>
               <th className="text-right py-3 px-4 font-semibold text-green-700">Annual Yield</th>
             </tr>
           </thead>
@@ -245,8 +270,14 @@ export default function RentalYield() {
                     {prop.tenure}
                   </span>
                 </td>
-                <td className="py-3 px-4 text-center text-gray-700">
+                <td className="py-3 px-4 text-center text-gray-700 font-semibold">
+                  {prop.remainingLease ? `${prop.remainingLease} yrs` : 'N/A'}
+                </td>
+                <td className="py-3 px-4 text-center text-gray-700 text-xs">
                   {prop.top_date ? new Date(prop.top_date).toLocaleDateString('en-SG') : 'N/A'}
+                </td>
+                <td className="py-3 px-4 text-center text-gray-700 text-xs">
+                  {prop.lease_start_date ? new Date(prop.lease_start_date).toLocaleDateString('en-SG') : 'N/A'}
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 font-semibold">
                   {prop.rental?.bedrooms || 'N/A'}
@@ -257,8 +288,14 @@ export default function RentalYield() {
                 <td className="py-3 px-4 text-right font-semibold text-gray-900">
                   ${(prop.recent_price / 1000000).toFixed(2)}M
                 </td>
+                <td className="py-3 px-4 text-center text-gray-700 text-xs">
+                  {prop.recent_date ? new Date(prop.recent_date).toLocaleDateString('en-SG') : 'N/A'}
+                </td>
                 <td className="py-3 px-4 text-right font-semibold text-gray-900">
                   ${(prop.rental?.monthly_rent || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}
+                </td>
+                <td className="py-3 px-4 text-center text-gray-700 text-xs">
+                  {prop.rental?.rental_date ? new Date(prop.rental.rental_date).toLocaleDateString('en-SG') : 'N/A'}
                 </td>
                 <td className="py-3 px-4 text-right">
                   <span className={`inline-block px-3 py-1 rounded font-bold ${

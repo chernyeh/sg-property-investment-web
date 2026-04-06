@@ -8,7 +8,7 @@ import Portfolio from './components/Portfolio'
 import RentalYield from './components/RentalYield'
 import PriceTrends from './components/PriceTrends'
 
-type Tab = 'dashboard' | 'comparison' | 'screening' | 'mortgage' | 'portfolio' | 'rental' | 'trends'
+type Tab = 'dashboard' | 'screening' | 'rental' | 'trends' | 'comparison' | 'mortgage' | 'portfolio'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
@@ -44,17 +44,6 @@ export default function App() {
               Dashboard
             </button>
             <button
-              onClick={() => setActiveTab('comparison')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
-                activeTab === 'comparison'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4" />
-              Compare
-            </button>
-            <button
               onClick={() => setActiveTab('screening')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                 activeTab === 'screening'
@@ -64,17 +53,6 @@ export default function App() {
             >
               <BarChart3 className="w-4 h-4" />
               Screening
-            </button>
-            <button
-              onClick={() => setActiveTab('mortgage')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
-                activeTab === 'mortgage'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <Calculator className="w-4 h-4" />
-              Mortgage
             </button>
             <button
               onClick={() => setActiveTab('rental')}
@@ -99,6 +77,28 @@ export default function App() {
               Price Trends
             </button>
             <button
+              onClick={() => setActiveTab('comparison')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                activeTab === 'comparison'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              Compare
+            </button>
+            <button
+              onClick={() => setActiveTab('mortgage')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                activeTab === 'mortgage'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+              }`}
+            >
+              <Calculator className="w-4 h-4" />
+              Mortgage
+            </button>
+            <button
               onClick={() => setActiveTab('portfolio')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
                 activeTab === 'portfolio'
@@ -116,11 +116,11 @@ export default function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'comparison' && <ProjectComparison />}
         {activeTab === 'screening' && <InvestmentScreening />}
-        {activeTab === 'mortgage' && <MortgageCalculator />}
         {activeTab === 'rental' && <RentalYield />}
         {activeTab === 'trends' && <PriceTrends />}
+        {activeTab === 'comparison' && <ProjectComparison />}
+        {activeTab === 'mortgage' && <MortgageCalculator />}
         {activeTab === 'portfolio' && <Portfolio />}
       </main>
 

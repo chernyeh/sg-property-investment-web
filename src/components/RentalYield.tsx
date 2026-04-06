@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react'
 import { getPropertiesWithYield, Property } from '../lib/supabase'
 import { DollarSign } from 'lucide-react'
 
-interface PropertyWithYield extends Property {
+interface PropertyWithLease extends Property {
   rental?: any
   annualYield?: number
   monthlyYield?: number
-  remainingLease?: number
+  remainingLease?: number | null
 }
 
 export default function RentalYield() {
-  const [properties, setProperties] = useState<PropertyWithYield[]>([])
-  const [filteredProperties, setFilteredProperties] = useState<PropertyWithYield[]>([])
+  const [properties, setProperties] = useState<PropertyWithLease[]>([])
+  const [filteredProperties, setFilteredProperties] = useState<PropertyWithLease[]>([])
   const [loading, setLoading] = useState(true)
   
   // Filters
@@ -38,8 +38,8 @@ export default function RentalYield() {
       const data = await getPropertiesWithYield()
       
       // Calculate remaining lease
-      const enrichedData = data.map(prop => {
-        let remainingLease = null
+      const enrichedData: PropertyWithLease[] = data.map(prop => {
+        let remainingLease: number | null = null
         if (prop.lease_start_date && (prop.tenure === '99-Year' || prop.tenure === '999-Year')) {
           const leaseYears = prop.tenure === '99-Year' ? 99 : 999
           const leaseEndDate = new Date(prop.lease_start_date)
@@ -47,7 +47,10 @@ export default function RentalYield() {
           const today = new Date()
           remainingLease = Math.ceil((leaseEndDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 365))
         }
-        return { ...prop, remainingLease }
+        return { 
+          ...prop, 
+          remainingLease 
+        }
       })
       
       setProperties(enrichedData)
